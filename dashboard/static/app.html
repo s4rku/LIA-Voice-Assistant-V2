@@ -3,20 +3,20 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>JARVIS Dashboard</title>
+  <title>LIA Dashboard</title>
   <script src="/static/crypto.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
-      --bg:      #07090f;
-      --surface: rgba(255,255,255,0.04);
-      --border:  rgba(255,255,255,0.07);
-      --accent:  #6366f1;
-      --adim:    rgba(99,102,241,0.14);
-      --text:    #dde3ed;
-      --muted:   #5e6a7e;
-      --green:   #22c55e;
-      --gdim:    rgba(34,197,94,0.14);
+      --bg:      #07010f;
+      --surface: rgba(192,132,252,0.06);
+      --border:  rgba(192,132,252,0.10);
+      --accent:  #a855f7;
+      --adim:    rgba(168, 85,247,0.14);
+      --text:    #edd6ff;
+      --muted:   #7c5a9e;
+      --green:   #34d399;
+      --gdim:    rgba(52,211,153,0.14);
     }
     html, body {
       height: 100%; background: var(--bg); color: var(--text);
@@ -136,7 +136,7 @@
 <body>
   <div id="toast"></div>
   <header>
-    <div class="logo"><em>J</em>ARVIS</div>
+    <div class="logo"><em>L</em>IA</div>
     <div class="pill" id="pill"><span class="dot"></span><span id="st">Connecting</span></div>
     <div class="enc-badge" id="enc">AES-256</div>
     <div class="spacer"></div>
@@ -144,7 +144,7 @@
   </header>
   <main id="feed"></main>
   <footer>
-    <input id="inp" placeholder="Send a command to JARVIS…" autocomplete="off">
+    <input id="inp" placeholder="Send a command to LIA…" autocomplete="off">
     <label class="btn-attach" for="file-inp" title="Send file">📎</label>
     <input type="file" id="file-inp" multiple accept="*/*" style="display:none">
     <button id="mic-btn" onclick="doMic()" title="Voice command">🎤</button>
@@ -154,8 +154,8 @@
 
   <script>
     // ── Auth — bearer token ───────────────────────────────────────────────────
-    const _authToken  = sessionStorage.getItem('jarvis_token');
-    const _sessionKey = sessionStorage.getItem('jarvis_key');
+    const _authToken  = sessionStorage.getItem('lia_token');
+    const _sessionKey = sessionStorage.getItem('lia_key');
 
     if (!_authToken) {
       location.replace('/login');
@@ -168,7 +168,7 @@
     }
 
     // ── AES-256-CBC encryption (CryptoJS) ────────────────────────────────────
-    const _AES_SALT = 'JARVIS-DASHBOARD-v1';
+    const _AES_SALT = 'LIA-DASHBOARD-v1';
     let _aesKey = null;
 
     function _initCrypto(key) {
@@ -210,7 +210,7 @@
     const _wsUrl   = `${_wsProto}://${location.host}/ws?token=${encodeURIComponent(_authToken)}`;
     const ws       = new WebSocket(_wsUrl);
 
-    ws.onopen    = () => { sys('Remote session active.'); toast('Connected to JARVIS'); };
+    ws.onopen    = () => { sys('Remote session active.'); toast('Connected to LIA'); };
     ws.onclose   = () => sys('Connection lost — refresh to reconnect.');
     ws.onerror   = () => sys('Connection error.');
     ws.onmessage = (e) => {
@@ -232,9 +232,9 @@
 
     function append(speaker, text) {
       const d = document.createElement('div');
-      if (speaker === 'jarvis') {
+      if (speaker === 'lia') {
         d.className = 'msg msg-j';
-        d.innerHTML = `<div class="lbl">Jarvis</div>${esc(text)}`;
+        d.innerHTML = `<div class="lbl">LIA</div>${esc(text)}`;
       } else {
         d.className = 'msg msg-u';
         d.innerHTML = `<div class="lbl">You</div>${esc(text)}`;

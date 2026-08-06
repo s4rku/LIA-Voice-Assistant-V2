@@ -82,7 +82,7 @@ _IMG_MAX_H = 720
 _JPEG_Q    = 82
 
 _SYSTEM_PROMPT = (
-    "You are JARVIS, Tony Stark's AI assistant. "
+    "You are LIA, a warm, intelligent, and professional AI assistant. "
     "You are given an image from either the user's screen or their webcam. "
     "Analyze what you see with detail and intelligence. "
     "Describe objects, text, people, components, and their context clearly. "
@@ -265,7 +265,7 @@ class _VisionSession:
             speech_config=gtypes.SpeechConfig(
                 voice_config=gtypes.VoiceConfig(
                     prebuilt_voice_config=gtypes.PrebuiltVoiceConfig(
-                        voice_name="Charon"
+                        voice_name="Aoede"
                     )
                 )
             ),
@@ -283,14 +283,27 @@ class _VisionSession:
                     backoff = 2.0  
                     print("[Vision] ✅ Connected")
 
-                    async with asyncio.TaskGroup() as tg:
-                        tg.create_task(self._send_loop())
-                        tg.create_task(self._recv_loop())
-                        tg.create_task(self._play_loop())
+                    tasks = [
+                        asyncio.ensure_future(self._send_loop()),
+                        asyncio.ensure_future(self._recv_loop()),
+                        asyncio.ensure_future(self._play_loop()),
+                    ]
+                    try:
+                        done, pending = await asyncio.wait(
+                            tasks, return_when=asyncio.FIRST_EXCEPTION
+                        )
+                        for t in pending:
+                            t.cancel()
+                        for t in done:
+                            if t.exception():
+                                raise t.exception()
+                    except Exception:
+                        for t in tasks:
+                            t.cancel()
+                        raise
 
-            except* Exception as eg:
-                for exc in eg.exceptions:
-                    print(f"[Vision] ⚠️  Session error: {exc}")
+            except Exception as exc:
+                print(f"[Vision] ⚠️  Session error: {exc}")
             finally:
                 self._session = None
                 self._ready_evt.clear()
@@ -342,10 +355,10 @@ class _VisionSession:
                     if transcript and self._player:
                         full = re.sub(r"\s+", " ", " ".join(transcript)).strip()
                         if full:
-                            self._player.write_log(f"Jarvis: {full}")
+                            self._player.write_log(f"LIA: {full}")
                             print(f"[Vision] 💬 {full}")
                     transcript = []
-                    # Auto-close camera ~2s after JARVIS finishes speaking
+                    # Auto-close camera ~2s after LIA finishes speaking the answer
                     if self._player and hasattr(self._player, "stop_camera_stream"):
                         async def _deferred_close():
                             await asyncio.sleep(2.0)

@@ -60,27 +60,27 @@ _OS = platform.system()  # "Windows" | "Darwin" | "Linux"
 
 
 class C:
-    BG        = "#00060a"
-    PANEL     = "#010d14"
-    PANEL2    = "#010f18"
-    BORDER    = "#0d3347"
-    BORDER_B  = "#1a5c7a"
-    BORDER_A  = "#0f4060"
-    PRI       = "#00d4ff"
-    PRI_DIM   = "#007a99"
-    PRI_GHO   = "#001f2e"
-    ACC       = "#ff6b00"
-    ACC2      = "#ffcc00"
-    GREEN     = "#00ff88"
-    GREEN_D   = "#00aa55"
-    RED       = "#ff3355"
-    MUTED_C   = "#ff3366"
-    TEXT      = "#8ffcff"
-    TEXT_DIM  = "#3a8a9a"
-    TEXT_MED  = "#5ab8cc"
-    WHITE     = "#d8f8ff"
-    DARK      = "#000d14"
-    BAR_BG    = "#011520"
+    BG        = "#07010f"
+    PANEL     = "#0e0520"
+    PANEL2    = "#110628"
+    BORDER    = "#3b1a6e"
+    BORDER_B  = "#6d3ab8"
+    BORDER_A  = "#4a2285"
+    PRI       = "#c084fc"
+    PRI_DIM   = "#7c3aed"
+    PRI_GHO   = "#1e0a40"
+    ACC       = "#f472b6"
+    ACC2      = "#fb923c"
+    GREEN     = "#34d399"
+    GREEN_D   = "#059669"
+    RED       = "#f43f5e"
+    MUTED_C   = "#f472b6"
+    TEXT      = "#edd6ff"
+    TEXT_DIM  = "#7c5a9e"
+    TEXT_MED  = "#a78bc5"
+    WHITE     = "#f3e8ff"
+    DARK      = "#04000e"
+    BAR_BG    = "#1a0a30"
 
 
 # Ana renge (accent) bağlı anahtarlar — durum renkleri (ACC, GREEN, RED…) sabit kalır
@@ -338,7 +338,7 @@ class _SysMetrics:
 _metrics = _SysMetrics()
 
 class HudCanvas(QWidget):
-    def __init__(self, face_path: str, assistant_name: str = "J.A.R.V.I.S", parent=None):
+    def __init__(self, face_path: str, assistant_name: str = "LIA", parent=None):
         super().__init__(parent)
         self.setAttribute(Qt.WidgetAttribute.WA_OpaquePaintEvent)
         self.setMinimumSize(300, 300)
@@ -537,16 +537,47 @@ class HudCanvas(QWidget):
             )
             p.drawPixmap(int(cx - fsz / 2), int(cy - fsz / 2), scaled)
         else:
-            orb_r = int(fw * 0.27 * self._scale)
-            oc    = (200, 0, 50) if self.muted else (0, 60, 110)
-            for i in range(8, 0, -1):
-                r2  = int(orb_r * i / 8)
-                frc = i / 8
-                a   = max(0, min(255, int(self._halo * 1.1 * frc)))
-                p.setBrush(QBrush(QColor(int(oc[0]*frc), int(oc[1]*frc), int(oc[2]*frc), a)))
+            # LIA diamond glyph — clean geometric sigil
+            orb_r = int(fw * 0.22 * self._scale)
+            frc_a = min(1.0, self._halo / 80.0)
+            # soft glow behind diamond
+            for i in range(6, 0, -1):
+                r2 = int(orb_r * 1.6 * i / 6)
+                a  = max(0, int(30 * frc_a * i / 6))
                 p.setPen(Qt.PenStyle.NoPen)
+                p.setBrush(QBrush(QColor(192, 132, 252, a)))
                 p.drawEllipse(QRectF(cx - r2, cy - r2, r2 * 2, r2 * 2))
-            p.setPen(QPen(qcol(C.PRI, min(255, int(self._halo * 2))), 1))
+            # outer diamond
+            d_size = orb_r * 1.35
+            diamond = QPainterPath()
+            diamond.moveTo(cx,          cy - d_size)
+            diamond.lineTo(cx + d_size, cy)
+            diamond.lineTo(cx,          cy + d_size)
+            diamond.lineTo(cx - d_size, cy)
+            diamond.closeSubpath()
+            pri_col = qcol(C.MUTED_C if self.muted else C.PRI,
+                           min(255, int(180 * frc_a)))
+            p.setPen(QPen(pri_col, 2))
+            p.setBrush(QBrush(qcol(C.PRI_GHO, min(200, int(140 * frc_a)))))
+            p.drawPath(diamond)
+            # inner smaller rotated diamond
+            d2 = d_size * 0.52
+            inner = QPainterPath()
+            inner.moveTo(cx + d2, cy - d2)
+            inner.lineTo(cx + d2, cy + d2)
+            inner.lineTo(cx - d2, cy + d2)
+            inner.lineTo(cx - d2, cy - d2)
+            inner.closeSubpath()
+            p.setPen(QPen(qcol(C.ACC, min(255, int(160 * frc_a))), 1.5))
+            p.setBrush(Qt.BrushStyle.NoBrush)
+            p.drawPath(inner)
+            # centre dot
+            cd = max(3, int(orb_r * 0.18))
+            p.setPen(Qt.PenStyle.NoPen)
+            p.setBrush(QBrush(qcol(C.WHITE, min(255, int(220 * frc_a)))))
+            p.drawEllipse(QRectF(cx - cd, cy - cd, cd * 2, cd * 2))
+            # name label
+            p.setPen(QPen(qcol(C.PRI, min(255, int(self._halo * 2.2))), 1))
             p.setFont(QFont("Courier New", 13, QFont.Weight.Bold))
             p.drawText(QRectF(cx - 80, cy - 14, 160, 28),
                        Qt.AlignmentFlag.AlignCenter, self._assistant_name)
@@ -682,7 +713,7 @@ class LogWidget(QTextEdit):
         self._text    = ""
         self._pos     = 0
         self._tag     = "sys"
-        self._ai_name_lc = "jarvis"   # updated when assistant name changes
+        self._ai_name_lc = "lia"   # updated when assistant name changes
         self._tmr = QTimer(self)
         self._tmr.timeout.connect(self._step)
         self._sig.connect(self._enqueue)
@@ -705,7 +736,7 @@ class LogWidget(QTextEdit):
         tl = self._text.lower()
         _ai_pfx = f"{self._ai_name_lc}:"
         if   tl.startswith("you:"):                              self._tag = "you"
-        elif tl.startswith(_ai_pfx) or tl.startswith("jarvis:"): self._tag = "ai"
+        elif tl.startswith(_ai_pfx) or tl.startswith("lia:"): self._tag = "ai"
         elif tl.startswith("file:"):                             self._tag = "file"
         elif "err" in tl:                                        self._tag = "err"
         else:                                                    self._tag = "sys"
@@ -831,7 +862,7 @@ class FileDropZone(QWidget):
 
     def _browse(self):
         path, _ = QFileDialog.getOpenFileName(
-            self, "Select a file for JARVIS", str(Path.home()),
+            self, "Select a file for LIA", str(Path.home()),
             "All Files (*.*);;"
             "Images (*.jpg *.jpeg *.png *.gif *.webp *.bmp *.svg);;"
             "Documents (*.pdf *.docx *.txt *.md *.pptx);;"
@@ -1246,7 +1277,7 @@ class CustomizeOverlay(QWidget):
     saved = pyqtSignal(str, str, str)   # assistant_name, user_name, ui_color
     _OW, _OH = 400, 500
 
-    def __init__(self, assistant_name="JARVIS", user_name="",
+    def __init__(self, assistant_name="LIA", user_name="",
                  ui_color=DEFAULT_UI_COLOR, parent=None):
         super().__init__(parent)
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
@@ -1406,14 +1437,14 @@ class CustomizeOverlay(QWidget):
         self.hide()
 
     def _save(self):
-        name = self._name_input.text().strip() or "JARVIS"
+        name = self._name_input.text().strip() or "LIA"
         user = self._user_input.text().strip()
         self.saved.emit(name, user, self._sel_color or DEFAULT_UI_COLOR)
         self.hide()
 
 
 class ClipboardPanel(QWidget):
-    """Floating panel shown when text is copied — offers quick Jarvis actions."""
+    """Floating panel shown when text is copied — offers quick LIA actions."""
 
     action_requested = pyqtSignal(str)
     _W, _H = 326, 112
@@ -1689,7 +1720,7 @@ class RemoteKeyOverlay(QWidget):
         self._qr_label.setStyleSheet(
             "color: #00ff88; background: #001a0d; border-radius: 10px;"
         )
-        self._timer_lbl.setText("Phone connected — JARVIS ready")
+        self._timer_lbl.setText("Phone connected — LIA ready")
         self._timer_lbl.setStyleSheet(f"color: {C.GREEN}; background: transparent;")
 
     def _refresh_key(self):
@@ -1742,7 +1773,7 @@ class MainWindow(QMainWindow):
 
         # Load customization from config
         _cfg = _read_full_config()
-        self._assistant_name: str = (_cfg.get("assistant_name") or "JARVIS").strip()
+        self._assistant_name: str = (_cfg.get("assistant_name") or "LIA").strip()
         _display = self._assistant_name.upper()
 
         # Kayıtlı UI rengini panel/stylesheet'ler kurulmadan ÖNCE uygula
@@ -1762,7 +1793,7 @@ class MainWindow(QMainWindow):
 
         self.on_text_command   = None
         self.on_remote_clicked = None   # callable: () -> (url, key) | None
-        self.on_interrupt      = None   # callable: () -> None — stop JARVIS mid-speech
+        self.on_interrupt      = None   # callable: () -> None — stop LIA mid-speech
         self._muted            = False
         self._current_file: str | None = None
         self._remote_overlay: RemoteKeyOverlay | None = None
@@ -1974,12 +2005,12 @@ class MainWindow(QMainWindow):
         self._cam_stop.set()
 
     # ------------------------------------------------------------------
-    # Icon generation — arc-reactor style, rendered with Pillow
+    # Icon generation — LIA crystal diamond, rendered with Pillow
     # ------------------------------------------------------------------
     @staticmethod
-    def _build_jarvis_icon(out_path: Path) -> bool:
+    def _build_lia_icon(out_path: Path) -> bool:
         """
-        Render a JARVIS arc-reactor icon at 4× resolution and downsample
+        Render a LIA diamond-crystal icon at 4× resolution and downsample
         for crisp results at all sizes. Saves a multi-res .ico to out_path.
         Returns True on success.
         """
@@ -1991,75 +2022,66 @@ class MainWindow(QMainWindow):
         except ImportError:
             return False
 
-        CYAN   = (0, 212, 255)
-        DIM    = (0, 100, 140)
-        DARK   = (0, 6, 10)
-        GLOW   = (0, 160, 200)
-        WHITE  = (220, 240, 255)
+        VIOLET = (192, 132, 252)
+        ROSE   = (244, 114, 182)
+        DARK   = (7,   1,  15)
+        GLOW   = (168,  85, 247)
+        WHITE  = (243, 232, 255)
+        DIM    = (124,  58, 237)
 
         def _render(sz: int) -> PIL.Image.Image:
-            S  = sz * 4                     # draw at 4× then downscale
+            S  = sz * 4
             img = PIL.Image.new("RGBA", (S, S), (0, 0, 0, 0))
             d   = PIL.ImageDraw.Draw(img)
             cx = cy = S // 2
 
-            # ── filled background circle ──────────────────────────────────
+            # background circle
             R = S // 2 - 2
             d.ellipse([cx-R, cy-R, cx+R, cy+R], fill=(*DARK, 255))
 
-            # ── outer border ring ─────────────────────────────────────────
+            # outer border ring
             lw = max(2, S // 40)
             d.ellipse([cx-R, cy-R, cx+R, cy+R],
-                      outline=(*CYAN, 220), width=lw)
+                      outline=(*VIOLET, 220), width=lw)
 
-            # ── mid decorative ring ───────────────────────────────────────
-            R2 = int(R * 0.72)
-            d.ellipse([cx-R2, cy-R2, cx+R2, cy+R2],
-                      outline=(*DIM, 180), width=max(1, lw // 2))
-
-            # ── 6 radial spokes (hex bolt) ────────────────────────────────
-            R_inner = int(R * 0.30)
-            R_outer = int(R * 0.62)
-            spoke_w = max(1, S // 80)
-            for i in range(6):
-                angle = math.radians(i * 60 - 30)
-                x1 = cx + int(R_inner * math.cos(angle))
-                y1 = cy + int(R_inner * math.sin(angle))
-                x2 = cx + int(R_outer * math.cos(angle))
-                y2 = cy + int(R_outer * math.sin(angle))
-                d.line([x1, y1, x2, y2], fill=(*GLOW, 200), width=spoke_w)
-
-            # ── 6 tick marks on outer ring ────────────────────────────────
-            for i in range(6):
-                angle = math.radians(i * 60)
-                for dr in range(lw * 2):
-                    rx = (R - lw - dr)
-                    d.point(
-                        [cx + int(rx * math.cos(angle)),
-                         cy + int(rx * math.sin(angle))],
-                        fill=(*WHITE, 220),
-                    )
-
-            # ── inner glowing ring ────────────────────────────────────────
-            Ri = int(R * 0.26)
-            d.ellipse([cx-Ri, cy-Ri, cx+Ri, cy+Ri],
-                      outline=(*CYAN, 255), width=max(2, lw))
-
-            # ── bright glow soft blur applied before core ─────────────────
-            # (draw a slightly larger cyan circle on a separate layer)
+            # glow halo behind diamond
             glow_layer = PIL.Image.new("RGBA", (S, S), (0, 0, 0, 0))
             gd = PIL.ImageDraw.Draw(glow_layer)
-            Rc = int(R * 0.13)
-            gd.ellipse([cx-Rc*2, cy-Rc*2, cx+Rc*2, cy+Rc*2],
-                       fill=(*CYAN, 110))
-            glow_layer = glow_layer.filter(PIL.ImageFilter.GaussianBlur(S // 14))
+            gd.ellipse([cx - S//4, cy - S//4, cx + S//4, cy + S//4],
+                       fill=(*GLOW, 80))
+            glow_layer = glow_layer.filter(PIL.ImageFilter.GaussianBlur(S // 10))
             img = PIL.Image.alpha_composite(img, glow_layer)
             d   = PIL.ImageDraw.Draw(img)
 
-            # ── core dot ──────────────────────────────────────────────────
-            d.ellipse([cx-Rc, cy-Rc, cx+Rc, cy+Rc], fill=(*WHITE, 255))
+            # outer diamond
+            ds = int(R * 0.56)
+            outer_pts = [(cx, cy - ds), (cx + ds, cy),
+                         (cx, cy + ds), (cx - ds, cy)]
+            d.polygon(outer_pts, fill=(*DIM, 60), outline=(*VIOLET, 240))
 
-            # ── downscale to target size ──────────────────────────────────
+            # inner rotated square (diamond)
+            ds2 = int(R * 0.30)
+            inner_pts = [(cx + ds2, cy - ds2), (cx + ds2, cy + ds2),
+                         (cx - ds2, cy + ds2), (cx - ds2, cy - ds2)]
+            d.polygon(inner_pts, fill=(*GLOW, 30), outline=(*ROSE, 200))
+
+            # facet lines (top-left and top-right of outer diamond to inner)
+            line_w = max(1, S // 80)
+            for pt in outer_pts[:2]:
+                d.line([pt, (cx, cy)], fill=(*WHITE, 60), width=line_w)
+
+            # bright centre core
+            Rc = int(R * 0.10)
+            core_layer = PIL.Image.new("RGBA", (S, S), (0, 0, 0, 0))
+            cd = PIL.ImageDraw.Draw(core_layer)
+            cd.ellipse([cx - Rc*2, cy - Rc*2, cx + Rc*2, cy + Rc*2],
+                       fill=(*WHITE, 140))
+            core_layer = core_layer.filter(PIL.ImageFilter.GaussianBlur(S // 20))
+            img = PIL.Image.alpha_composite(img, core_layer)
+            d   = PIL.ImageDraw.Draw(img)
+            d.ellipse([cx - Rc, cy - Rc, cx + Rc, cy + Rc],
+                      fill=(*WHITE, 255))
+
             return img.resize((sz, sz), PIL.Image.LANCZOS)
 
         try:
@@ -2092,7 +2114,7 @@ class MainWindow(QMainWindow):
             sc.TargetPath       = target
             sc.Arguments        = f'"{args}"'
             sc.WorkingDirectory = work_dir
-            sc.Description      = "J.A.R.V.I.S AI Assistant"
+            sc.Description      = "LIA AI Assistant"
             sc.IconLocation     = icon_loc
             sc.save()
             return
@@ -2219,9 +2241,9 @@ class MainWindow(QMainWindow):
         desktop = self._get_desktop_dir()
 
         # Arc-reactor icon (.ico — also exported as .png for Linux/macOS)
-        ico_path = Path(__file__).resolve().parent / "config" / "jarvis.ico"
+        ico_path = Path(__file__).resolve().parent / "config" / "lia.ico"
         if not ico_path.exists():
-            self._build_jarvis_icon(ico_path)
+            self._build_lia_icon(ico_path)
 
         try:
             _os = platform.system()
@@ -2245,7 +2267,7 @@ class MainWindow(QMainWindow):
 
                 # Launcher executable (bash — runs as background process,
                 # macOS does NOT open Terminal for executables inside .app bundles)
-                launcher = mac_dir / "JARVIS"
+                launcher = mac_dir / "LIA"
                 launcher.write_text(
                     "#!/usr/bin/env bash\n"
                     f'cd "{script.parent}"\n'
@@ -2260,10 +2282,9 @@ class MainWindow(QMainWindow):
                     '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" '
                     '"http://www.apple.com/DTDs/PropertyList-1.0.dtd">\n'
                     '<plist version="1.0"><dict>\n'
-                    '  <key>CFBundleExecutable</key><string>JARVIS</string>\n'
-                    '  <key>CFBundleIdentifier</key>'
-                    '<string>com.jarvis.assistant</string>\n'
-                    '  <key>CFBundleName</key><string>J.A.R.V.I.S</string>\n'
+                    '  <key>CFBundleExecutable</key><string>LIA</string>\n'
+                    '  <key>CFBundleIdentifier</key><string>com.lia.assistant</string>\n'
+                    '  <key>CFBundleName</key><string>LIA</string>\n'
                     '  <key>CFBundlePackageType</key><string>APPL</string>\n'
                     '  <key>CFBundleVersion</key><string>1.0</string>\n'
                     '</dict></plist>\n'
@@ -2454,8 +2475,8 @@ class MainWindow(QMainWindow):
         self._title_lbl.setFont(QFont("Courier New", 17, QFont.Weight.Bold))
         self._title_lbl.setStyleSheet(f"color: {C.PRI}; background: transparent;")
         mid.addWidget(self._title_lbl)
-        _sub_text = ("Just A Rather Very Intelligent System"
-                     if _disp in ("JARVIS", "J.A.R.V.I.S")
+        _sub_text = ("Local Intelligent Assistant"
+                     if _disp in ("LIA",)
                      else "Personal AI Assistant")
         self._sub_lbl = QLabel(_sub_text)
         self._sub_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -2941,7 +2962,7 @@ class MainWindow(QMainWindow):
                 key = winreg.OpenKey(winreg.HKEY_CURRENT_USER,
                     r"Software\Microsoft\Windows\CurrentVersion\Run", 0, winreg.KEY_READ)
                 try:
-                    winreg.QueryValueEx(key, "JARVIS_AI")
+                    winreg.QueryValueEx(key, "LIA_AI")
                     return True
                 except FileNotFoundError:
                     return False
@@ -2949,9 +2970,9 @@ class MainWindow(QMainWindow):
                     winreg.CloseKey(key)
             elif _OS == "Darwin":
                 return (Path.home() / "Library" / "LaunchAgents"
-                        / "com.jarvis.assistant.plist").exists()
+                        / "com.lia.assistant.plist").exists()
             else:
-                return (Path.home() / ".config" / "autostart" / "jarvis.desktop").exists()
+                return (Path.home() / ".config" / "autostart" / "lia.desktop").exists()
         except Exception:
             return False
 
@@ -2964,17 +2985,17 @@ class MainWindow(QMainWindow):
                 reg = winreg.OpenKey(winreg.HKEY_CURRENT_USER,
                     r"Software\Microsoft\Windows\CurrentVersion\Run", 0, winreg.KEY_ALL_ACCESS)
                 if currently_on:
-                    winreg.DeleteValue(reg, "JARVIS_AI")
+                    winreg.DeleteValue(reg, "LIA_AI")
                 else:
                     pythonw = Path(sys.executable).parent / "pythonw.exe"
                     exe = str(pythonw if pythonw.exists() else sys.executable)
-                    winreg.SetValueEx(reg, "JARVIS_AI", 0, winreg.REG_SZ,
+                    winreg.SetValueEx(reg, "LIA_AI", 0, winreg.REG_SZ,
                                       f'"{exe}" "{script}"')
                 winreg.CloseKey(reg)
             elif _OS == "Darwin":
                 plist_dir = Path.home() / "Library" / "LaunchAgents"
                 plist_dir.mkdir(parents=True, exist_ok=True)
-                plist = plist_dir / "com.jarvis.assistant.plist"
+                plist = plist_dir / "com.lia.assistant.plist"
                 if currently_on:
                     plist.unlink(missing_ok=True)
                 else:
@@ -2983,7 +3004,7 @@ class MainWindow(QMainWindow):
                         '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" '
                         '"http://www.apple.com/DTDs/PropertyList-1.0.dtd">\n'
                         '<plist version="1.0"><dict>\n'
-                        '  <key>Label</key><string>com.jarvis.assistant</string>\n'
+                        '  <key>Label</key><string>com.lia.assistant</string>\n'
                         '  <key>ProgramArguments</key><array>\n'
                         f'    <string>{sys.executable}</string>\n'
                         f'    <string>{script}</string>\n'
@@ -2994,7 +3015,7 @@ class MainWindow(QMainWindow):
             else:
                 desk_dir = Path.home() / ".config" / "autostart"
                 desk_dir.mkdir(parents=True, exist_ok=True)
-                desk = desk_dir / "jarvis.desktop"
+                desk = desk_dir / "lia.desktop"
                 if currently_on:
                     desk.unlink(missing_ok=True)
                 else:
@@ -3072,7 +3093,7 @@ class MainWindow(QMainWindow):
             self._customize_overlay.hide()
         cw = self.centralWidget()
         ov = CustomizeOverlay(
-            cfg.get("assistant_name", "JARVIS") or "JARVIS",
+            cfg.get("assistant_name", "LIA") or "LIA",
             cfg.get("user_name", ""),
             cfg.get("ui_color", "") or DEFAULT_UI_COLOR,
             parent=cw,
@@ -3097,11 +3118,11 @@ class MainWindow(QMainWindow):
 
     def _apply_name_update(self, name: str, user_name: str, ui_color: str = ""):
         """Update all name/theme-dependent UI elements and persist to config."""
-        self._assistant_name = name.strip() or "JARVIS"
+        self._assistant_name = name.strip() or "LIA"
         display = self._assistant_name.upper()
         self.setWindowTitle(f"{display} — MARK XLIX")
         self._title_lbl.setText(display)
-        if display in ("JARVIS", "J.A.R.V.I.S"):
+        if display in ("LIA",):
             self._sub_lbl.setText("Just A Rather Very Intelligent System")
         else:
             self._sub_lbl.setText("Personal AI Assistant")
@@ -3236,7 +3257,7 @@ class MainWindow(QMainWindow):
             self._overlay.hide()
             self._overlay = None
         self._apply_state("LISTENING")
-        self._assistant_name = _read_full_config().get("assistant_name", "JARVIS") or "JARVIS"
+        self._assistant_name = _read_full_config().get("assistant_name", "LIA") or "LIA"
         self._log.append_log(f"SYS: Initialised. OS={os_name.upper()}. {self._assistant_name} online.")
 
 class _RootShim:
@@ -3248,7 +3269,7 @@ class _RootShim:
         pass
 
 
-class JarvisUI:
+class LiaUI:
     def __init__(self, face_path: str, size=None):
         self._app = QApplication.instance() or QApplication(sys.argv)
         self._app.setStyle("Fusion")

@@ -105,7 +105,7 @@ def _play_audio_bytes(audio_bytes: bytes) -> None:
 class EdgeTTSEngine:
     """Microsoft EdgeTTS – free, requires internet."""
 
-    def __init__(self, voice: str = "en-US-GuyNeural"):
+    def __init__(self, voice: str = "en-US-JennyNeural"):
         self.voice = voice
 
     def speak(self, text: str) -> None:
@@ -223,7 +223,7 @@ class KokoroTTSEngine:
     the first real speak() call has zero compilation overhead.
     """
 
-    def __init__(self, voice: str = "af_heart", speed: float = 1.0):
+    def __init__(self, voice: str = "af_sky", speed: float = 1.0):
         self.voice     = voice
         self.speed     = speed
         self._pipeline = None
@@ -429,7 +429,7 @@ class TTSPlayer:
 def create_tts_player(config: dict) -> TTSPlayer:
     engine_name = config.get("tts_engine", "edgetts").lower()
     if engine_name == "kokoro":
-        voice  = config.get("tts_voice", "af_heart")
+        voice  = config.get("tts_voice", "af_sky")
         speed  = float(config.get("tts_speed", 1.0))
         engine = KokoroTTSEngine(voice=voice, speed=speed)
     elif engine_name == "elevenlabs":
@@ -437,6 +437,6 @@ def create_tts_player(config: dict) -> TTSPlayer:
         voice_id = config.get("tts_voice", "pNInz6obpgDQGcFmaJgB")
         engine   = ElevenLabsTTSEngine(api_key=api_key, voice_id=voice_id)
     else:   # edgetts (default)
-        voice  = config.get("tts_voice", "en-US-GuyNeural")
+        voice  = config.get("tts_voice", "en-US-JennyNeural")
         engine = EdgeTTSEngine(voice=voice)
     return TTSPlayer(engine)
