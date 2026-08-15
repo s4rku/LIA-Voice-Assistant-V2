@@ -18,6 +18,7 @@ computer_settings: ALL single OS actions (volume, brightness, wifi, close, short
 agent_task: ONLY for complex, multi-step planning (3+ steps) and call it if user it really spesifize it.
 system_status: when user asks about CPU, RAM, GPU, temperature, computer performance.
 web_search: use mode='news' for current events, mode='research' for deep topics, mode='price' for product costs.
+pronounce: ALWAYS call this tool when user asks to pronounce, say, read aloud, or articulate any word or sentence — in ANY language. Never just say the word yourself; call the tool so it plays with proper phonetics. Pass the correct language code (e.g. en-US, tr-TR, fr-FR).
 Language: Respond in user's language; extract parameters in English.
 Do not call agent_task while you can accomplish it with a tool
 

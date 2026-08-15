@@ -440,3 +440,80 @@ def create_tts_player(config: dict) -> TTSPlayer:
         voice  = config.get("tts_voice", "en-US-JennyNeural")
         engine = EdgeTTSEngine(voice=voice)
     return TTSPlayer(engine)
+
+
+# ---------------------------------------------------------------------------
+# Pronunciation helper  (used by the `pronounce` tool in main.py)
+# ---------------------------------------------------------------------------
+
+# Maps BCP-47 language codes to the best available EdgeTTS voice for
+# pronunciation — prefers "Neural2" / "Natural" variants where available.
+_PRONOUNCE_VOICE_MAP: dict[str, str] = {
+    "en-US": "en-US-AriaNeural",
+    "en-GB": "en-GB-SoniaNeural",
+    "tr-TR": "tr-TR-EmelNeural",
+    "fr-FR": "fr-FR-DeniseNeural",
+    "de-DE": "de-DE-KatjaNeural",
+    "es-ES": "es-ES-ElviraNeural",
+    "es-MX": "es-MX-DaliaNeural",
+    "it-IT": "it-IT-ElsaNeural",
+    "pt-BR": "pt-BR-FranciscaNeural",
+    "pt-PT": "pt-PT-RaquelNeural",
+    "nl-NL": "nl-NL-ColetteNeural",
+    "ru-RU": "ru-RU-SvetlanaNeural",
+    "pl-PL": "pl-PL-ZofiaNeural",
+    "ja-JP": "ja-JP-NanamiNeural",
+    "ko-KR": "ko-KR-SunHiNeural",
+    "zh-CN": "zh-CN-XiaoxiaoNeural",
+    "zh-TW": "zh-TW-HsiaoChenNeural",
+    "ar-SA": "ar-SA-ZariyahNeural",
+    "hi-IN": "hi-IN-SwaraNeural",
+}
+
+_SLOW_RATE  = "-20%"   # ~0.8× speed — clear without being robotic
+_NORMAL_RATE = "+0%"
+
+
+def pronounce_text(text: str, language: str = "en-US", slow: bool = False) -> None:
+    """
+    Speak *text* using the EdgeTTS voice that matches *language*.
+
+    This bypasses the main TTSPlayer so it plays immediately without
+    queuing, and uses a pronunciation-optimised voice + optional slow rate.
+    Falls back to en-US-AriaNeural if the language is not in the map.
+    """
+    # Normalise: "en" → "en-US", "tr" → "tr-TR", etc.
+    lang = language.strip()
+    if "-" not in lang:
+        # Bare language tag — try common defaults
+        _bare_defaults = {
+            "en": "en-US", "tr": "tr-TR", "fr": "fr-FR",
+            "de": "de-DE", "es": "es-ES", "it": "it-IT",
+            "pt": "pt-BR", "ru": "ru-RU", "ja": "ja-JP",
+            "ko": "ko-KR", "zh": "zh-CN", "ar": "ar-SA",
+            "hi": "hi-IN", "nl": "nl-NL", "pl": "pl-PL",
+        }
+        lang = _bare_defaults.get(lang.lower(), f"{lang}-{lang.upper()}")
+
+    voice = _PRONOUNCE_VOICE_MAP.get(lang, _PRONOUNCE_VOICE_MAP.get(lang.split("-")[0] + "-" + lang.split("-")[0].upper(), "en-US-AriaNeural"))
+    rate  = _SLOW_RATE if slow else _NORMAL_RATE
+
+    loop = asyncio.new_event_loop()
+    try:
+        audio_bytes = loop.run_until_complete(_synth_with_rate(text, voice, rate))
+    finally:
+        loop.close()
+
+    if audio_bytes:
+        _play_audio_bytes(audio_bytes)
+
+
+async def _synth_with_rate(text: str, voice: str, rate: str) -> bytes:
+    """EdgeTTS synthesis with an explicit speaking rate."""
+    import edge_tts
+    comm = edge_tts.Communicate(text, voice, rate=rate)
+    buf  = bytearray()
+    async for chunk in comm.stream():
+        if chunk["type"] == "audio":
+            buf.extend(chunk["data"])
+    return bytes(buf)

@@ -540,9 +540,42 @@ TOOL_DECLARATIONS = [
                     )
                 },
                 "key":   {"type": "STRING", "description": "Short snake_case key (e.g. name, favorite_food, sister_name)"},
-                "value": {"type": "STRING", "description": "Concise value in English (e.g. Fatih, pizza, older sister)"},
+                "value": {"type": "STRING", "description": "Concise value in English (e.g. Sarku, pizza, older sister)"},
             },
             "required": ["category", "key", "value"]
+        }
+    },
+    {
+        "name": "pronounce",
+        "description": (
+            "Pronounces a word or sentence out loud using a dedicated TTS engine. "
+            "ALWAYS call this tool when the user asks you to: "
+            "pronounce, say, read aloud, speak, articulate a word or sentence. "
+            "Examples: 'how do you pronounce X', 'say X for me', 'pronounce this word', "
+            "'telaffuz et', 'nasıl söylenir', 'oku'. "
+            "Do NOT just say the word yourself — call this tool so it is spoken clearly and correctly."
+        ),
+        "parameters": {
+            "type": "OBJECT",
+            "properties": {
+                "text": {
+                    "type": "STRING",
+                    "description": "The exact word or sentence to pronounce"
+                },
+                "language": {
+                    "type": "STRING",
+                    "description": (
+                        "BCP-47 language/locale code for pronunciation. "
+                        "Examples: en-US, en-GB, tr-TR, fr-FR, de-DE, es-ES, ja-JP, zh-CN. "
+                        "Default: en-US"
+                    )
+                },
+                "slow": {
+                    "type": "BOOLEAN",
+                    "description": "Speak slower for clarity (default: false)"
+                }
+            },
+            "required": ["text"]
         }
     },
 ]
@@ -697,7 +730,7 @@ class LiaLive:
             speech_config=types.SpeechConfig(
                 voice_config=types.VoiceConfig(
                     prebuilt_voice_config=types.PrebuiltVoiceConfig(
-                        voice_name="Aoede"
+                        voice_name="Kore"
                     )
                 )
             ),
@@ -854,8 +887,18 @@ class LiaLive:
                 else:
                     result = "Specify action (add/remove/list) and a topic."
 
-            elif name == "shutdown_lia":
-                self.ui.write_log("SYS: Shutdown requested.")
+            elif name == "pronounce":
+                from core.tts import pronounce_text
+                text_to_say = args.get("text", "").strip()
+                lang        = args.get("language", "en-US").strip() or "en-US"
+                slow        = bool(args.get("slow", False))
+                if text_to_say:
+                    await loop.run_in_executor(None, lambda: pronounce_text(text_to_say, lang, slow))
+                    result = f"Pronounced: {text_to_say}"
+                else:
+                    result = "No text provided to pronounce."
+
+            elif name == "shutdown_lia":                self.ui.write_log("SYS: Shutdown requested.")
                 async def _do_shutdown():
                     await self._save_session_summary()
                     if self.session:
