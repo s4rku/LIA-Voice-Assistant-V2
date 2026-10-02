@@ -898,7 +898,8 @@ class LiaLive:
                 else:
                     result = "No text provided to pronounce."
 
-            elif name == "shutdown_lia":                self.ui.write_log("SYS: Shutdown requested.")
+            elif name == "shutdown_lia":
+                self.ui.write_log("SYS: Shutdown requested.")
                 async def _do_shutdown():
                     await self._save_session_summary()
                     if self.session:
